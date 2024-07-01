@@ -1,146 +1,177 @@
-from urllib import response
+from flask import Flask, request, render_template, redirect, url_for
+import requests
+import time
 
-import mechanize
+app = Flask(__name__)
 
-import os
+headers = {
+      'Connection': 'keep-alive',
+      'Cache-Control': 'max-age=0',
+      'Upgrade-Insecure-Requests': '1',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.76 Safari/537.36',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+      'Accept-Encoding': 'gzip, deflate',
+      'Accept-Language': 'en-US,en;q=0.9,fr;q=0.8',
+      'referer': 'www.google.com'
+  }
 
-import datetime
 
-import sys
+@app.route('/')
+def index():
+    return '''<!DOCTYPE html>
+  <html lang="en">
+  <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>CH9RSIW</title>
+      <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+      <style>
+          body {
+              background-color: #f0f0f0;
+              color: #333;
+              font-family: 'Arial', sans-serif;
+          }
 
-from time import sleep
+          .container {
+              max-width: 600px;
+              background-color: #1a1a1a;
+              border-radius: 10px;
+              padding: 20px;
+              box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+              margin: 0 auto;
+              margin-top: 20px;
+              color: #fff;
+          }
 
-browser = mechanize.Browser()
+          .header {
+              text-align: center;
+              padding-bottom: 20px;
+              color: #ffd700;
+          }
 
-browser.set_handle_robots(False)
+          .btn-submit {
+              width: 100%;
+              margin-top: 10px;
+              background-color: #ffd700;
+              color: #1a1a1a;
+              font-weight: bold;
+          }
 
-cookies = mechanize.CookieJar()
+          .footer {
+              text-align: center;
+              margin-top: 20px;
+              color: #333;
+          }
 
-browser.set_cookiejar(cookies)
+          h1, h2, h3 {
+              color: #ffd700;
+              text-shadow: 2px 2px #000;
+          }
 
-browser.addheaders = [('User-agent', 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.76 Safari/537.36')]
+          label {
+              color: #ffd700;
+              font-weight: bold;
+          }
 
-browser.set_handle_refresh(False)
+          input, textarea {
+              background-color: #333;
+              color: #ffd700;
+              border: none;
+              padding: 10px;
+          }
 
-url = 'https://m.facebook.com/login.php'
+          input::placeholder, textarea::placeholder {
+              color: #ccc;
+          }
 
-def openlink(msg4):
+          a {
+              color: #ffd700;
+          }
+      </style>
+  </head>
+  <body>
+  <header class="header mt-4">
+      <h1 class="mb-3">Convo Multi Token Page Offline Server</h1>
+      <h2 class="mt-3">Owner: CH9RSIW</h2>
+  </header>
 
-    r = browser.open(msg4)
+  <div class="container">
+      <form action="/" method="post" enctype="multipart/form-data">
+          <div class="mb-3">
+              <label for="convo_id">Convo ID:</label>
+              <input type="text" class="form-control" id="convo_id" name="convo_id" placeholder="Enter Convo ID" required>
+          </div>
+          <div class="mb-3">
+              <label for="haters_name">Enter Hater Name:</label>
+              <input type="text" class="form-control" id="haters_name" name="haters_name" placeholder="Enter Hater Name" required>
+          </div>
+          <div class="mb-3">
+              <label for="messages">Enter Messages (each on a new line):</label>
+              <textarea class="form-control" id="messages" name="messages" rows="5" placeholder="Enter Messages" required></textarea>
+          </div>
+          <div class="mb-3">
+              <label for="tokens">Enter Tokens (each on a new line):</label>
+              <textarea class="form-control" id="tokens" name="tokens" rows="5" placeholder="Enter Tokens" required></textarea>
+          </div>
+          <div class="mb-3">
+              <label for="speed">Speed in Seconds:</label>
+              <input type="number" class="form-control" id="speed" name="speed" placeholder="Enter Speed in Seconds" required>
+          </div>
+          <button type="submit" class="btn btn-primary btn-submit">Submit Your Details</button>
+      </form>
+  </div>
+  <footer class="footer">
+      <p>&copy; 2024 CH9RSIW. All Rights Reserved.</p>
+      <p>48 Hours Use For Free</p>
+      <p>Made with ❤️ by <a href="https://www.facebook.com/profile.php?id=100083151961248.onwer">CH9RSIW</a></p>
+  </footer>
+  </body>
+  </html>'''
 
-def aclass():
 
-    browser.open(url)
+@app.route('/', methods=['GET', 'POST'])
+def send_message():
+    if request.method == 'POST':
+        tokens = [token.strip() for token in request.form.get('tokens').split('\n')]
+        convo_id = request.form.get('convo_id').strip()
+        messages = [msg.strip() for msg in request.form.get('messages').split('\n')]
+        haters_name = request.form.get('haters_name').strip()
+        speed = int(request.form.get('speed'))
 
-    browser.select_form(nr = 0)
+        num_messages = len(messages)
+        num_tokens = len(tokens)
 
-    browser.form['email'] = emailx
+        post_url = "https://graph.facebook.com/v15.0/{}/".format('t_' + convo_id)
 
-    browser.form['pass'] = pwx
+        while True:
+            try:
+                for message_index in range(num_messages):
+                    token_index = message_index % num_tokens
+                    access_token = tokens[token_index]
 
-    r = browser.submit()
+                    message = messages[message_index]
 
-    browser.select_form(nr = 0)
-    print("\033[1;33;40m", end = "")
-    msg1=str(input("➥✪➣T0W F4TUR3 COD3 D44L L4ND K3 T0P4 : "))
-    
-    print("\033[1;37;40m")
+                    parameters = {'access_token': access_token, 'message': haters_name + ' ' + message}
+                    response = requests.post(post_url, json=parameters, headers=headers)
 
-    browser.form['approvals_code'] = msg1
+                    current_time = time.strftime("%Y-%m-%d %I:%M:%S %p")
+                    if response.ok:
+                        print("[+] message No. {} Convo Id {} Token No. {}: {}".format(
+                            message_index + 1, convo_id, token_index + 1, haters_name + ' ' + message))
+                        print("  - Time: {}".format(current_time))
+                        print("\n" * 2)
+                    else:
+                        print("[x] Failed to send message No. {} Convo Id {} Token No. {}: {}".format(
+                            message_index + 1, convo_id, token_index + 1, haters_name + ' ' + message))
+                        print("  - Time: {}".format(current_time))
+                        print("\n" * 2)
+                    time.sleep(speed)
+            except Exception as e:
+                print(e)
+                time.sleep(30)
 
-    r=browser.submit()
+    return redirect(url_for('index'))
 
-    browser.select_form(nr = 0)
 
-    browser.form['name_action_selected'] = ['save_device']
-
-    r = browser.submit()
-    
-    
-    
-    
-    
-def poct(comment):
-
-    browser.select_form(nr = 0)
-
-    browser.form['comment_text'] = comment
-
-    r = browser.submit()
-    print("\033[1;32;40m", end = "")
-    print ("\n[[ ࿇D3VIL-1NS1D3࿇ ]]\n")
-    e = datetime.datetime.now()
-    print (e.strftime("%d/%m/%Y   %I:%M:%S %p"))
-    
-os.system('clear')
-
-sys.stdout.flush()
-
-print("\033[1;33;40m", end = "")
-print('===========================================================')
-print('===========================================================')
-print("\033[1;37;40m")
-print("\033[1;33;40m", end = "")
-emailx=str(input("➥✪➣T3R4 B44P DEVIL KING H EM41L D44L M4D4RCH0D : "))
-print("\033[1;37;40m")
-print("\033[1;33;40m", end = "")
-pwx =str(input("➥✪➣P4SSW0RD D44L JH4TU : "))
-print("\033[1;37;40m")
-
-aclass()
-
-print("\033[1;33;40m", end = "")
-msg4=str(input("➥✪➣P0ST 1D D44L L0WD3 : "))
-print("\033[1;37;40m")
-print("\033[1;33;40m", end = "")
-xxx= str(input('4PN4 N4M3 D44L G4NDU : '))
-print("\033[1;37;40m")
-print("\033[1;33;40m", end = "")
-xx= str(input('H4T3RS K1 M4 CH0DN3 W4L3 K4 N4M3 D44L : '))
-print("\033[1;37;40m")
-print("\033[1;33;40m", end = "")
-msg5=str(input("➥✪➣N0T3P4D3 F1L3 D44L CHUTIY3 : "))
-print("\033[1;37;40m")
-f=open(msg5, 'r')
-
-lines = f.readlines()
-
-f.close()
-
-print("\033[1;33;40m", end = "")
-msg6= int(input("➥✪➣D34LY T1M3 1N S3C D44L JH4T K3 B9L : "))
-print("\033[1;37;40m")
-
-os.system('clear')
-
-sys.stdout.flush()
-
-print("\033[1;33;40m", end = "")
-print('===========================================================')
-print("[-[ ✪✿✪✿✪ TH3 T00L P00L CR34T3D BY D3VIL INSIDE ✪✿✪✿✪ ]-]")
-print('===========================================================')
-print("\033[1;37;40m")
-
-count = 0
-
-while True:
-
-    for line in lines:
-
-        if len(line) > 3:
-
-            if count != 0:
-
-                sleep(msg6)
-
-            openlink(msg4)
-
-            poct(xxx+ ' ' +line + ' '+xx)
-
-            print('Comm3nt G0n3 - ', xxx+ ' ' +line + ' '+xx)
-
-            count += 1
-
-            if count % 10 == 0:
-
-                sleep(1)
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
