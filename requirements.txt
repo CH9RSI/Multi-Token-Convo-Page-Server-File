@@ -1,0 +1,5 @@
+Flask==2.3.2
+requests==2.31.0
+socketio==0.2.1
+Flask-SocketIO==5.3.6
+urllib3==2.1.0
